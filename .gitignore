@@ -76,3 +76,4 @@ DerivedDataCache/*
 /ShaderTest/Intermediate
 /ShaderTest/Plugins/MyShaderPlugin/Intermediate/Build
 /ShaderTest/Saved
+/ShaderTest/Plugins/Foo/Intermediate
