@@ -72,3 +72,7 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+/ShaderTest/Binaries
+/ShaderTest/Intermediate
+/ShaderTest/Plugins/MyShaderPlugin/Intermediate/Build
+/ShaderTest/Saved
