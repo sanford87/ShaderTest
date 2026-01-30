@@ -1,22 +1,29 @@
 #include "/Engine/Public/Platform.ush"
 
-// 1. Define the Texture and Sampler inputs
+// --- 1. NEW VERTEX SHADER ---
+// This generates a triangle covering the screen using just the Vertex Index
+void MainVS(
+    in uint VertexID : SV_VertexID,
+    out float4 OutPosition : SV_POSITION,
+    out float2 OutUV : TEXCOORD0
+)
+{
+    OutUV = float2((VertexID << 1) & 2, VertexID & 2);
+    OutPosition = float4(OutUV * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
+}
+
+// --- 2. YOUR PIXEL SHADER ---
 Texture2D InputTexture;
 SamplerState InputSampler;
 
 void MainPS(
     in float4 SvPosition : SV_POSITION,
-    in float2 UV : TEXCOORD0, // <--- We now accept UV coordinates from the vertex shader
+    in float2 UV : TEXCOORD0,
     out float4 OutColor : SV_Target0
 )
 {
-    // 2. Sample the Red channel of the texture
     float RedValue = InputTexture.Sample(InputSampler, UV).r;
-
-    // 3. Convert 16-bit range (0-65535) to 14-bit range (0-16383)
-    // In normalized float terms: 1.0 becomes 0.25.
+    // Simple 16-bit to 14-bit conversion example
     float ConvertedValue = RedValue * 0.25f;
-
-    // 4. Output the result
-    OutColor =  float4(ConvertedValue, 0, 0, 1); 
+    OutColor = float4(ConvertedValue, 0, 0, 1);
 }

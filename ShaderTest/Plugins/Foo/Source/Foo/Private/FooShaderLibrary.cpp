@@ -1,10 +1,7 @@
 #include "FooShaderLibrary.h"
 #include "FooShader.h"
-#include "PixelShaderUtils.h"
 #include "TextureResource.h"
-#include "CommonRenderResources.h"
-#include "ScreenRendering.h" // <--- CRITICAL FIX: Defines FScreenVS and DrawRectangle
-#include "PipelineStateCache.h" // Required for PSOs
+#include "PipelineStateCache.h" 
 
 void UFooShaderLibrary::DrawFooShader(const UObject* WorldContextObject, UTextureRenderTarget2D* OutputRenderTarget, UTexture2D* InputTexture)
 {
@@ -21,47 +18,51 @@ void UFooShaderLibrary::DrawFooShader(const UObject* WorldContextObject, UTextur
         {
             check(IsInRenderingThread());
 
+            // 1. Begin Render Pass
             FRHIRenderPassInfo RPInfo(OutResource->GetRenderTargetTexture(), ERenderTargetActions::Load_Store);
             RHICmdList.BeginRenderPass(RPInfo, TEXT("FooShaderPass"));
 
-            // 1. Get Shaders
+            // 2. Set Viewport
+            RHICmdList.SetViewport(0, 0, 0.0f, Width, Height, 1.0f);
+
+            // 3. Get Shaders
             auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
-            TShaderMapRef<FScreenVS> VertexShader(ShaderMap);
+            TShaderMapRef<FFooShaderVS> VertexShader(ShaderMap);
             TShaderMapRef<FFooShaderPS> PixelShader(ShaderMap);
 
-            // 2. Set Pipeline State (PSO)
+            // 4. Create Pipeline State (PSO)
             FGraphicsPipelineStateInitializer GraphicsPSOInit;
             RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
             GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
             GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
             GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
-
-            GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GFilterVertexDeclaration.VertexDeclarationRHI;
-            GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
-            GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
             GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 
-            // FIX: Added '0' for StencilRef (Required in UE 5.3)
+            // --- FIX: MANUALLY CREATE EMPTY VERTEX DECLARATION ---
+            // This replaces GEmptyVertexDeclaration.VertexDeclarationRHI
+            FVertexDeclarationElementList Elements;
+            FVertexDeclarationRHIRef EmptyVertexDeclaration = RHICreateVertexDeclaration(Elements);
+
+            GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = EmptyVertexDeclaration;
+            // -----------------------------------------------------
+
+            GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+            GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+
             SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
 
-            // 3. Set Parameters
+            // 5. Set Pixel Shader Parameters
             FFooShaderParameters Parameters;
             Parameters.InputTexture = InResource->TextureRHI;
             Parameters.InputSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
-
             SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), Parameters);
 
-            // 4. Draw Rectangle
-            // FIX: Explicitly cast VertexShader to the base shader reference type to satisfy the template
-            DrawRectangle(
-                RHICmdList,
-                0, 0, Width, Height, // Dest Rect
-                0, 0, 1, 1,          // Source UVs
-                FIntPoint(Width, Height),
-                FIntPoint(1, 1),
-                VertexShader, // The Vertex Shader to use
-                EDRF_Default
-            );
+            // 6. Set Vertex Shader Parameters (Empty)
+            FFooVertexShaderParameters VertexParameters;
+            SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VertexParameters);
+
+            // 7. Draw
+            RHICmdList.DrawPrimitive(0, 1, 1);
 
             RHICmdList.EndRenderPass();
         }
