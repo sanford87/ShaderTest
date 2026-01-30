@@ -151,8 +151,10 @@ public:
 
 
 //IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationVS, TEXT("/Plugin/LensDistortion/Private/UVGeneration.usf"), TEXT("MainVS"), SF_Vertex)
-IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationVS, TEXT("/Plugin/Foo/Private/MyShader.usf"), TEXT("MainVS"), SF_Vertex)
-IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationPS, TEXT("/Plugin/Foo/Private/MyShader.usf"), TEXT("MainPS"), SF_Pixel)
+//IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationVS, TEXT("/Plugin/Foo/Shaders/Private/MyShader.usf"), TEXT("MainVS"), SF_Vertex)
+IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationVS, TEXT("E:/GitLocal/ShaderTest/ShaderTest/Plugins/Foo/Shaders/Private/MyShader.usf"), TEXT("MainVS"), SF_Vertex)
+//IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationPS, TEXT("/Plugin/Foo/Shaders/Private/MyShader.usf"), TEXT("MainPS"), SF_Pixel)
+IMPLEMENT_SHADER_TYPE(, FLensDistortionUVGenerationPS, TEXT("E:/GitLocal/ShaderTest/ShaderTest/Plugins/Foo/Shaders/Private/MyShader.usf"), TEXT("MainPS"), SF_Pixel)
 
 
 static void DrawUVDisplacementToRenderTarget_RenderThread(

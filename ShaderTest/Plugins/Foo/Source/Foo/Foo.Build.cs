@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class Foo : ModuleRules
@@ -10,6 +11,8 @@ public class Foo : ModuleRules
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
+                //"Foo/Public"
+				Path.Combine(ModuleDirectory, "Public"),
 				// ... add public include paths required here ...
 			}
 			);
@@ -17,6 +20,9 @@ public class Foo : ModuleRules
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {
+                //"Foo/Private",
+				Path.Combine(ModuleDirectory, "Private"),
+				//Path.Combine(ModuleDirectory, "Shaders\\Private"),
 				// ... add other private include paths required here ...
 			}
 			);
@@ -26,6 +32,8 @@ public class Foo : ModuleRules
 			new string[]
 			{
 				"Core",
+                "RenderCore",
+				"RHI",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -36,8 +44,6 @@ public class Foo : ModuleRules
 			{
 				"CoreUObject",
 				"Engine",
-				"Slate",
-				"SlateCore",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

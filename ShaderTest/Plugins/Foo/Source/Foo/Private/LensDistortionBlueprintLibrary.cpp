@@ -4,13 +4,13 @@
 
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
-UFooBlueprintLibrary::UFooBlueprintLibrary(const FObjectInitializer& ObjectInitializer)
+ULensDistortionBlueprintLibrary::ULensDistortionBlueprintLibrary(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 { }
 
 
 // static
-void UFooBlueprintLibrary::GetUndistortOverscanFactor(
+void ULensDistortionBlueprintLibrary::GetUndistortOverscanFactor(
 	const FFooCameraModel& CameraModel,
 	float DistortedHorizontalFOV,
 	float DistortedAspectRatio,
@@ -21,7 +21,7 @@ void UFooBlueprintLibrary::GetUndistortOverscanFactor(
 
 
 // static
-void UFooBlueprintLibrary::DrawUVDisplacementToRenderTarget(
+void ULensDistortionBlueprintLibrary::DrawUVDisplacementToRenderTarget(
 	const UObject* WorldContextObject,
 	const FFooCameraModel& CameraModel,
 	float DistortedHorizontalFOV,
