@@ -16,5 +16,5 @@ class FOO_API UFooShaderLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 public:
     UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
-    static void DrawFooShader(const UObject* WorldContextObject, UTextureRenderTarget2D* OutputRenderTarget, FLinearColor Color);
+    static void DrawFooShader(const UObject* WorldContextObject, UTextureRenderTarget2D* OutputRenderTarget, UTexture2D* InputTexture);
 };

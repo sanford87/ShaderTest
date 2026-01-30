@@ -1,12 +1,22 @@
 #include "/Engine/Public/Platform.ush"
 
-// Simple Pixel Shader
-float4 MyColor;
+// 1. Define the Texture and Sampler inputs
+Texture2D InputTexture;
+SamplerState InputSampler;
 
 void MainPS(
     in float4 SvPosition : SV_POSITION,
+    in float2 UV : TEXCOORD0, // <--- We now accept UV coordinates from the vertex shader
     out float4 OutColor : SV_Target0
 )
 {
-    OutColor = MyColor;
+    // 2. Sample the Red channel of the texture
+    float RedValue = InputTexture.Sample(InputSampler, UV).r;
+
+    // 3. Convert 16-bit range (0-65535) to 14-bit range (0-16383)
+    // In normalized float terms: 1.0 becomes 0.25.
+    float ConvertedValue = RedValue * 0.25f;
+
+    // 4. Output the result
+    OutColor =  float4(ConvertedValue, 0, 0, 1); 
 }

@@ -7,7 +7,8 @@
 
 // Define the parameters we want to send to the USF file
 BEGIN_SHADER_PARAMETER_STRUCT(FFooShaderParameters, )
-    SHADER_PARAMETER(FLinearColor, MyColor)
+    SHADER_PARAMETER_TEXTURE(Texture2D, InputTexture) // Matches 'InputTexture' in USF
+    SHADER_PARAMETER_SAMPLER(SamplerState, InputSampler) // Matches 'InputSampler' in USF
 END_SHADER_PARAMETER_STRUCT()
 
 class FFooShaderPS : public FGlobalShader

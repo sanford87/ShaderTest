@@ -32,9 +32,13 @@ public class Foo : ModuleRules
 			new string[]
 			{
 				"Core",
+				"CoreUObject",
+				"Engine",
+                "InputCore",
                 "RenderCore",
 				"RHI",
                 "Projects",
+                "Renderer",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
