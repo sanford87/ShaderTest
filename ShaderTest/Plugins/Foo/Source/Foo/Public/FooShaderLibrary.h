@@ -25,8 +25,9 @@ public:
         UTextureRenderTarget2D* OutputRenderTarget,
         float K1, float K2, float K3,
         float P1, float P2,
-        float CenterX, float CenterY,
-        float Fx, float Fy
+        float CenterX = 0.5, float CenterY = 0.5,
+        float Fx = 1.0, 
+        float Fy = 1.0
     );
 
 };
