@@ -17,4 +17,16 @@ class FOO_API UFooShaderLibrary : public UBlueprintFunctionLibrary
 public:
     UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
     static void DrawFooShader(const UObject* WorldContextObject, UTextureRenderTarget2D* OutputRenderTarget, UTexture2D* InputTexture);
+
+    // New Function for Lens Distortion
+    UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
+    static void DrawLensDistortion(
+        const UObject* WorldContextObject,
+        UTextureRenderTarget2D* OutputRenderTarget,
+        float K1, float K2, float K3,
+        float P1, float P2,
+        float CenterX, float CenterY,
+        float Fx, float Fy
+    );
+
 };

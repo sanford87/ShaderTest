@@ -45,3 +45,44 @@ public:
         return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
     }
 };
+
+
+// =========================================================================
+// 2. NEW LENS DISTORTION SHADER (Add this!)
+// =========================================================================
+
+// Define the complex parameters required by the tutorial algorithm
+BEGIN_SHADER_PARAMETER_STRUCT(FLensDistortionParameters, )
+    SHADER_PARAMETER(FVector2f, PixelUVSize)
+    SHADER_PARAMETER(FVector3f, RadialDistortionCoefs)
+    SHADER_PARAMETER(FVector2f, TangentialDistortionCoefs)
+    SHADER_PARAMETER(FVector4f, UndistortedCameraMatrix)
+    SHADER_PARAMETER(FVector4f, DistortedCameraMatrix)
+    SHADER_PARAMETER(FVector2f, OutputMultiplyAndAdd)
+END_SHADER_PARAMETER_STRUCT()
+
+// VS Class
+class FLensDistortionVS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FLensDistortionVS);
+    using FParameters = FLensDistortionParameters; // VS needs params to undistort grid
+    SHADER_USE_PARAMETER_STRUCT(FLensDistortionVS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+        return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+    }
+};
+
+// PS Class
+class FLensDistortionPS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FLensDistortionPS);
+    using FParameters = FLensDistortionParameters; // PS needs params for calculating color
+    SHADER_USE_PARAMETER_STRUCT(FLensDistortionPS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+        return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+    }
+};

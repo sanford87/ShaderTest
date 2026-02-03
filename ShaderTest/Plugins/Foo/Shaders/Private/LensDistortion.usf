@@ -1,0 +1,90 @@
+#include "/Engine/Public/Platform.ush"
+
+// Define grid size directly in shader for simplicity
+#define GRID_SUBDIVISION_X 32
+#define GRID_SUBDIVISION_Y 16
+
+// --- Parameters ---
+float2 PixelUVSize;
+float3 RadialDistortionCoefs; // K1, K2, K3
+float2 TangentialDistortionCoefs; // P1, P2
+float4 UndistortedCameraMatrix; // Fx, Fy, Cx, Cy
+float4 DistortedCameraMatrix; // Fx, Fy, Cx, Cy
+float2 OutputMultiplyAndAdd; // Scale and Bias for the output
+
+// --- Helper Functions ---
+float2 UndistortNormalizedViewPosition(float2 V)
+{
+    float2 V2 = V * V;
+    float R2 = V2.x + V2.y;
+    // Radial distortion 
+    float2 UndistortedV = V * (1.0 + R2 * (RadialDistortionCoefs.x + R2 * (RadialDistortionCoefs.y + R2 * RadialDistortionCoefs.z)));
+    // Tangential distortion
+    UndistortedV.x += TangentialDistortionCoefs.y * (R2 + 2 * V2.x) + 2 * TangentialDistortionCoefs.x * V.x * V.y;
+    UndistortedV.y += TangentialDistortionCoefs.x * (R2 + 2 * V2.y) + 2 * TangentialDistortionCoefs.y * V.x * V.y;
+    return UndistortedV;
+}
+
+float2 UndistortViewportUV(float2 ViewportUV)
+{
+    // Distorted UV -> Distorted View Pos (z=1)
+    float2 DistortedViewPosition = (ViewportUV - DistortedCameraMatrix.zw) / DistortedCameraMatrix.xy;
+    // Undistort
+    float2 UndistortedViewPosition = UndistortNormalizedViewPosition(DistortedViewPosition);
+    // Undistorted View Pos -> Undistorted UV
+    return UndistortedCameraMatrix.xy * UndistortedViewPosition + UndistortedCameraMatrix.zw;
+}
+
+float2 FlipUV(float2 UV)
+{
+    return float2(UV.x, 1 - UV.y);
+}
+
+// --- VERTEX SHADER ---
+// Generates a grid of triangles procedurally based on VertexID
+void LensDistortionVS(
+    in uint GlobalVertexId : SV_VertexID,
+    out float2 OutVertexDistortedViewportUV : TEXCOORD0,
+    out float4 OutPosition : SV_POSITION
+)
+{
+    // 1. Calculate Grid Cell
+    uint GridCellIndex = GlobalVertexId / 6;
+    uint GridColumnId = GridCellIndex / GRID_SUBDIVISION_Y;
+    uint GridRowId = GridCellIndex - GridColumnId * GRID_SUBDIVISION_Y;
+    uint VertexId = GlobalVertexId - GridCellIndex * 6;
+
+    // 2. Compute UV within cell
+    float2 CellVertexUV = float2(0x1 & ((VertexId + 1) / 3), VertexId & 0x1);
+    
+    // 3. Compute Grid UV
+    float2 GridInvSize = 1.f / float2(GRID_SUBDIVISION_X, GRID_SUBDIVISION_Y);
+    float2 GridVertexUV = FlipUV(GridInvSize * (CellVertexUV + float2(GridColumnId, GridRowId)));
+    
+    // 4. Center Align
+    GridVertexUV -= PixelUVSize * 0.5;
+
+    // 5. Undistort the Grid Position for the Vertex
+    // This warps the mesh so the pixel shader has less work/higher quality
+    OutPosition = float4(FlipUV(UndistortViewportUV(GridVertexUV) + PixelUVSize * 0.5) * 2 - 1, 0, 1);
+    
+    OutVertexDistortedViewportUV = GridVertexUV;
+}
+
+// --- PIXEL SHADER ---
+void LensDistortionPS(
+    in noperspective float2 VertexDistortedViewportUV : TEXCOORD0,
+    in float4 SvPosition : SV_POSITION,
+    out float4 OutColor : SV_Target0
+)
+{
+    float2 ViewportUV = SvPosition.xy * PixelUVSize;
+    ViewportUV -= PixelUVSize * 0.5;
+    
+    // Calculate the displacement needed
+    float2 DistortUVtoUndistortUV = (UndistortViewportUV(ViewportUV)) - ViewportUV;
+    float2 UndistortUVtoDistortUV = VertexDistortedViewportUV - ViewportUV;
+
+    // Output the Displacement map (RG)
+    OutColor = OutputMultiplyAndAdd.y + OutputMultiplyAndAdd.x * float4(DistortUVtoUndistortUV, UndistortUVtoDistortUV);
+}

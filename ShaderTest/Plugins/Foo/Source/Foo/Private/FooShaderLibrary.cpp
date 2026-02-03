@@ -68,3 +68,84 @@ void UFooShaderLibrary::DrawFooShader(const UObject* WorldContextObject, UTextur
         }
         );
 }
+
+// --- New Function ---
+void UFooShaderLibrary::DrawLensDistortion(
+    const UObject* WorldContextObject,
+    UTextureRenderTarget2D* OutputRenderTarget,
+    float K1, float K2, float K3,
+    float P1, float P2,
+    float CenterX, float CenterY,
+    float Fx, float Fy)
+{
+    if (!OutputRenderTarget) return;
+
+    FTextureRenderTargetResource* OutResource = OutputRenderTarget->GameThread_GetRenderTargetResource();
+    int32 Width = OutputRenderTarget->SizeX;
+    int32 Height = OutputRenderTarget->SizeY;
+
+    // Default center if 0
+    if (CenterX == 0) CenterX = 0.5f;
+    if (CenterY == 0) CenterY = 0.5f;
+    if (Fx == 0) Fx = 1.0f;
+    if (Fy == 0) Fy = 1.0f;
+
+    ENQUEUE_RENDER_COMMAND(DrawLensDistortionCmd)(
+        [OutResource, Width, Height, K1, K2, K3, P1, P2, CenterX, CenterY, Fx, Fy](FRHICommandListImmediate& RHICmdList)
+        {
+            check(IsInRenderingThread());
+
+            FRHIRenderPassInfo RPInfo(OutResource->GetRenderTargetTexture(), ERenderTargetActions::Load_Store);
+            RHICmdList.BeginRenderPass(RPInfo, TEXT("LensDistortionPass"));
+
+            // 1. Viewport
+            RHICmdList.SetViewport(0, 0, 0.0f, Width, Height, 1.0f);
+
+            // 2. Shaders
+            auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+            TShaderMapRef<FLensDistortionVS> VertexShader(ShaderMap);
+            TShaderMapRef<FLensDistortionPS> PixelShader(ShaderMap);
+
+            // 3. Pipeline
+            FGraphicsPipelineStateInitializer GraphicsPSOInit;
+            RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+            GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+            GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+            GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+            GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+            // Create Empty Vertex Declaration (VS uses SV_VertexID)
+            FVertexDeclarationElementList Elements;
+            FVertexDeclarationRHIRef EmptyVertexDeclaration = RHICreateVertexDeclaration(Elements);
+            GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = EmptyVertexDeclaration;
+            GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+            GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+
+            SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
+
+            // 4. Calculate Parameters
+            FLensDistortionParameters Params;
+            Params.PixelUVSize = FVector2f(1.0f / Width, 1.0f / Height);
+            Params.RadialDistortionCoefs = FVector3f(K1, K2, K3);
+            Params.TangentialDistortionCoefs = FVector2f(P1, P2);
+            Params.OutputMultiplyAndAdd = FVector2f(1.0f, 0.0f); // Scale 1, Bias 0
+
+            // Construct Matrices (Simplified for tutorial sake)
+            // Fx, Fy, Cx, Cy
+            Params.DistortedCameraMatrix = FVector4f(Fx, Fy, CenterX, CenterY);
+            Params.UndistortedCameraMatrix = FVector4f(Fx, Fy, CenterX, CenterY);
+
+            // 5. Bind Params
+            SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), Params);
+            SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), Params);
+
+            // 6. Draw Grid
+            // The shader uses a grid of 32x16. 
+            // Triangles = 32 * 16 * 2. Vertices = Triangles * 3.
+            // 32 * 16 * 2 * 3 = 3072 vertices.
+            RHICmdList.DrawPrimitive(0, 32 * 16 * 2, 1);
+
+            RHICmdList.EndRenderPass();
+        }
+        );
+}
