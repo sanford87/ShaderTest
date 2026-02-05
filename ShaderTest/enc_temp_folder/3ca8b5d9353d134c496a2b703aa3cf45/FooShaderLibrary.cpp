@@ -154,15 +154,14 @@ void UFooShaderLibrary::DrawLensDistortion(
 void UFooShaderLibrary::ApplyDistortionToScene(
     const UObject* WorldContextObject,
     UTextureRenderTarget2D* OutputRenderTarget,
-    UTextureRenderTarget2D* SceneTexture,
+    UTexture2D* SceneTexture,
     UTextureRenderTarget2D* DistortionMap)
 {
     if (!OutputRenderTarget || !SceneTexture || !DistortionMap) return;
 
     FTextureRenderTargetResource* OutResource = OutputRenderTarget->GameThread_GetRenderTargetResource();
-    //FTextureResource* SceneResource = SceneTexture->GetResource();
+    FTextureResource* SceneResource = SceneTexture->GetResource();
     FTextureRenderTargetResource* DistMapResource = DistortionMap->GameThread_GetRenderTargetResource();
-    FTextureRenderTargetResource* SceneResource = SceneTexture->GameThread_GetRenderTargetResource();
 
     int32 Width = OutputRenderTarget->SizeX;
     int32 Height = OutputRenderTarget->SizeY;
@@ -199,11 +198,8 @@ void UFooShaderLibrary::ApplyDistortionToScene(
 
             // Bind Parameters
             FDistortSceneParameters Params;
-            // NEW: Use GetRenderTargetTexture() instead of TextureRHI for the Scene
-            //Params.SceneTexture = SceneResource->TextureRHI;            
-            //Params.DistortionTexture = DistMapResource->TextureRHI; 
-            Params.SceneTexture = SceneResource->GetRenderTargetTexture();            
-            Params.DistortionTexture = DistMapResource->GetRenderTargetTexture();// The output from previous step
+            Params.SceneTexture = SceneResource->TextureRHI;
+            Params.DistortionTexture = DistMapResource->TextureRHI; // The output from previous step
             // Bilinear sampling is important here for smooth warping
             Params.InputSampler = TStaticSamplerState<SF_Bilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
 

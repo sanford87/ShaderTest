@@ -34,7 +34,7 @@ public:
     static void ApplyDistortionToScene(
         const UObject* WorldContextObject,
         UTextureRenderTarget2D* OutputRenderTarget,
-        UTextureRenderTarget2D* SceneTexture,
+        UTexture2D* SceneTexture,
         UTextureRenderTarget2D* DistortionMap
     );
 
