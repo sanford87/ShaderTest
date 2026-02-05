@@ -220,3 +220,65 @@ void UFooShaderLibrary::ApplyDistortionToScene(
         }
         );
 }
+
+void UFooShaderLibrary::ApplyBitShift(
+    const UObject* WorldContextObject,
+    UTextureRenderTarget2D* OutputRenderTarget,
+    UTextureRenderTarget2D* InputTexture,
+    int32 BitShift)
+{
+    if (!OutputRenderTarget || !InputTexture) return;
+
+    FTextureRenderTargetResource* OutResource = OutputRenderTarget->GameThread_GetRenderTargetResource();
+    FTextureRenderTargetResource* InResource = InputTexture->GameThread_GetRenderTargetResource();
+
+    int32 Width = OutputRenderTarget->SizeX;
+    int32 Height = OutputRenderTarget->SizeY;
+
+    ENQUEUE_RENDER_COMMAND(BitShiftCmd)(
+        [OutResource, InResource, Width, Height, BitShift](FRHICommandListImmediate& RHICmdList)
+        {
+            check(IsInRenderingThread());
+
+            FRHIRenderPassInfo RPInfo(OutResource->GetRenderTargetTexture(), ERenderTargetActions::Load_Store);
+            RHICmdList.BeginRenderPass(RPInfo, TEXT("BitShiftPass"));
+
+            RHICmdList.SetViewport(0, 0, 0.0f, Width, Height, 1.0f);
+
+            auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+            TShaderMapRef<FBitShiftVS> VertexShader(ShaderMap);
+            TShaderMapRef<FBitShiftPS> PixelShader(ShaderMap);
+
+            FGraphicsPipelineStateInitializer GraphicsPSOInit;
+            RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+            GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+            GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+            GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+            GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+            // Empty VS Setup
+            FVertexDeclarationElementList Elements;
+            FVertexDeclarationRHIRef EmptyVertexDeclaration = RHICreateVertexDeclaration(Elements);
+            GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = EmptyVertexDeclaration;
+            GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+            GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+
+            SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
+
+            // Bind Parameters
+            FBitShiftParameters Params;
+            Params.InputTexture = InResource->GetRenderTargetTexture();
+            Params.InputSampler = TStaticSamplerState<SF_Point, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
+            Params.ShiftAmount = BitShift;
+
+            SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), Params);
+
+            FEmptyVSParams VSParams;
+            SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
+
+            RHICmdList.DrawPrimitive(0, 1, 1);
+
+            RHICmdList.EndRenderPass();
+        }
+        );
+}

@@ -38,4 +38,12 @@ public:
         UTextureRenderTarget2D* DistortionMap
     );
 
+    UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
+    static void ApplyBitShift(
+        const UObject* WorldContextObject,
+        UTextureRenderTarget2D* OutputRenderTarget,
+        UTextureRenderTarget2D* InputTexture,
+        int32 BitShift
+    );
+
 };

@@ -133,3 +133,37 @@ public:
         return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
     }
 };
+
+// =========================================================================
+// 4. BIT SHIFT SHADER
+// =========================================================================
+
+BEGIN_SHADER_PARAMETER_STRUCT(FBitShiftParameters, )
+    SHADER_PARAMETER_TEXTURE(Texture2D, InputTexture)
+    SHADER_PARAMETER_SAMPLER(SamplerState, InputSampler)
+    SHADER_PARAMETER(int, ShiftAmount) // The integer argument
+END_SHADER_PARAMETER_STRUCT()
+
+class FBitShiftVS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FBitShiftVS);
+    using FParameters = FEmptyVSParams; // Reuse our empty struct
+    SHADER_USE_PARAMETER_STRUCT(FBitShiftVS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+        return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+    }
+};
+
+class FBitShiftPS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FBitShiftPS);
+    using FParameters = FBitShiftParameters;
+    SHADER_USE_PARAMETER_STRUCT(FBitShiftPS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+        return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+    }
+};
