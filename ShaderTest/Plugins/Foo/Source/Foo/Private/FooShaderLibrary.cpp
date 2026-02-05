@@ -149,3 +149,70 @@ void UFooShaderLibrary::DrawLensDistortion(
         }
         );
 }
+
+
+void UFooShaderLibrary::ApplyDistortionToScene(
+    const UObject* WorldContextObject,
+    UTextureRenderTarget2D* OutputRenderTarget,
+    UTexture2D* SceneTexture,
+    UTextureRenderTarget2D* DistortionMap)
+{
+    if (!OutputRenderTarget || !SceneTexture || !DistortionMap) return;
+
+    FTextureRenderTargetResource* OutResource = OutputRenderTarget->GameThread_GetRenderTargetResource();
+    FTextureResource* SceneResource = SceneTexture->GetResource();
+    FTextureRenderTargetResource* DistMapResource = DistortionMap->GameThread_GetRenderTargetResource();
+
+    int32 Width = OutputRenderTarget->SizeX;
+    int32 Height = OutputRenderTarget->SizeY;
+
+    ENQUEUE_RENDER_COMMAND(ApplyDistortionCmd)(
+        [OutResource, SceneResource, DistMapResource, Width, Height](FRHICommandListImmediate& RHICmdList)
+        {
+            check(IsInRenderingThread());
+
+            FRHIRenderPassInfo RPInfo(OutResource->GetRenderTargetTexture(), ERenderTargetActions::Load_Store);
+            RHICmdList.BeginRenderPass(RPInfo, TEXT("ApplyDistortionPass"));
+
+            RHICmdList.SetViewport(0, 0, 0.0f, Width, Height, 1.0f);
+
+            auto ShaderMap = GetGlobalShaderMap(GMaxRHIFeatureLevel);
+            TShaderMapRef<FDistortSceneVS> VertexShader(ShaderMap);
+            TShaderMapRef<FDistortScenePS> PixelShader(ShaderMap);
+
+            FGraphicsPipelineStateInitializer GraphicsPSOInit;
+            RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
+            GraphicsPSOInit.BlendState = TStaticBlendState<>::GetRHI();
+            GraphicsPSOInit.RasterizerState = TStaticRasterizerState<>::GetRHI();
+            GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<false, CF_Always>::GetRHI();
+            GraphicsPSOInit.PrimitiveType = PT_TriangleList;
+
+            // Empty VS Declaration
+            FVertexDeclarationElementList Elements;
+            FVertexDeclarationRHIRef EmptyVertexDeclaration = RHICreateVertexDeclaration(Elements);
+            GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = EmptyVertexDeclaration;
+            GraphicsPSOInit.BoundShaderState.VertexShaderRHI = VertexShader.GetVertexShader();
+            GraphicsPSOInit.BoundShaderState.PixelShaderRHI = PixelShader.GetPixelShader();
+
+            SetGraphicsPipelineState(RHICmdList, GraphicsPSOInit, 0);
+
+            // Bind Parameters
+            FDistortSceneParameters Params;
+            Params.SceneTexture = SceneResource->TextureRHI;
+            Params.DistortionTexture = DistMapResource->TextureRHI; // The output from previous step
+            // Bilinear sampling is important here for smooth warping
+            Params.InputSampler = TStaticSamplerState<SF_Bilinear, AM_Clamp, AM_Clamp, AM_Clamp>::GetRHI();
+
+            SetShaderParameters(RHICmdList, PixelShader, PixelShader.GetPixelShader(), Params);
+
+            // Set Empty VS Params amd use the empty struct we defined in the header
+            FEmptyVSParams VSParams;
+            SetShaderParameters(RHICmdList, VertexShader, VertexShader.GetVertexShader(), VSParams);
+
+            // Draw Full Screen Triangle
+            RHICmdList.DrawPrimitive(0, 1, 1);
+
+            RHICmdList.EndRenderPass();
+        }
+        );
+}

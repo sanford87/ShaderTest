@@ -87,4 +87,7 @@ void LensDistortionPS(
 
     // Output the Displacement map (RG)
     OutColor = OutputMultiplyAndAdd.y + OutputMultiplyAndAdd.x * float4(DistortUVtoUndistortUV, UndistortUVtoDistortUV);
+    // Return the FINAL UVs
+    float2 FinalUV = VertexDistortedViewportUV + DistortUVtoUndistortUV;
+    OutColor = float4(FinalUV, 0, 1);
 }

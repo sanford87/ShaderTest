@@ -4,6 +4,11 @@
 #include "ShaderParameterStruct.h"
 #include "DataDrivenShaderPlatformInfo.h"
 
+
+// =========================================================================
+// 1. BASIC FOO SHADER EXAMPLE
+// =========================================================================
+
 // 1. Pixel Shader Parameters (Texture & Sampler)
 BEGIN_SHADER_PARAMETER_STRUCT(FFooShaderParameters, )
     SHADER_PARAMETER_TEXTURE(Texture2D, InputTexture)
@@ -48,7 +53,7 @@ public:
 
 
 // =========================================================================
-// 2. NEW LENS DISTORTION SHADER (Add this!)
+// 2. VISUALIZE LENS DISTORTION SHADER
 // =========================================================================
 
 // Define the complex parameters required by the tutorial algorithm
@@ -81,6 +86,48 @@ public:
     DECLARE_GLOBAL_SHADER(FLensDistortionPS);
     using FParameters = FLensDistortionParameters; // PS needs params for calculating color
     SHADER_USE_PARAMETER_STRUCT(FLensDistortionPS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+        return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+    }
+};
+
+// =========================================================================
+// 3. APPLY DISTORTION SHADER
+// =========================================================================
+
+
+// Pixel Shader Parameters
+BEGIN_SHADER_PARAMETER_STRUCT(FDistortSceneParameters, )
+    SHADER_PARAMETER_TEXTURE(Texture2D, SceneTexture)
+    SHADER_PARAMETER_TEXTURE(Texture2D, DistortionTexture)
+    SHADER_PARAMETER_SAMPLER(SamplerState, InputSampler)
+END_SHADER_PARAMETER_STRUCT()
+
+// 1. Define an empty parameter struct explicitly
+BEGIN_SHADER_PARAMETER_STRUCT(FEmptyVSParams, )
+END_SHADER_PARAMETER_STRUCT()
+
+// Vertex Shader Class
+class FDistortSceneVS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FDistortSceneVS);
+    using FParameters = FEmptyVSParams; // Use explicit empty struct
+    SHADER_USE_PARAMETER_STRUCT(FDistortSceneVS, FGlobalShader);
+
+    static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
+        return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);
+    }
+};
+
+// Pixel Shader Class
+class FDistortScenePS : public FGlobalShader
+{
+public:
+    DECLARE_GLOBAL_SHADER(FDistortScenePS);
+    using FParameters = FDistortSceneParameters;
+    SHADER_USE_PARAMETER_STRUCT(FDistortScenePS, FGlobalShader);
 
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters) {
         return IsFeatureLevelSupported(Parameters.Platform, ERHIFeatureLevel::SM5);

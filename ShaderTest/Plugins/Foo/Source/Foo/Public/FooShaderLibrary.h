@@ -18,7 +18,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
     static void DrawFooShader(const UObject* WorldContextObject, UTextureRenderTarget2D* OutputRenderTarget, UTexture2D* InputTexture);
 
-    // New Function for Lens Distortion
+    // New Function for Visualizing Lens Distortion
     UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
     static void DrawLensDistortion(
         const UObject* WorldContextObject,
@@ -28,6 +28,14 @@ public:
         float CenterX = 0.5, float CenterY = 0.5,
         float Fx = 1.0, 
         float Fy = 1.0
+    );
+    // New Function for applying Lens Distortion
+    UFUNCTION(BlueprintCallable, Category = "Foo Shader", meta = (WorldContext = "WorldContextObject"))
+    static void ApplyDistortionToScene(
+        const UObject* WorldContextObject,
+        UTextureRenderTarget2D* OutputRenderTarget,
+        UTexture2D* SceneTexture,
+        UTextureRenderTarget2D* DistortionMap
     );
 
 };
